@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/task-api/src/app.js" }
+  ],
+  "functions": {
+    "task-api/src/app.js": {
+      "runtime": "vercel-node@latest"
+    }
+  }
+}
