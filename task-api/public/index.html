@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow | Premium Task Management</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <nav>
+        <div class="logo">TaskFlow.</div>
+        <div class="nav-stats" id="navStats">
+            <div class="nav-stat-item">
+                <span class="nav-stat-label">Total</span>
+                <span class="nav-stat-value" id="totalTasks">0</span>
+            </div>
+            <div class="nav-stat-item" style="color: var(--accent-emerald);">
+                <span class="nav-stat-label">Done</span>
+                <span class="nav-stat-value" id="completedTasks">0</span>
+            </div>
+            <div class="nav-stat-item" style="color: var(--accent-rose);">
+                <span class="nav-stat-label">Overdue</span>
+                <span class="nav-stat-value" id="overdueTasks">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="header-actions">
+            <div class="view-controls">
+                <button class="view-btn active" data-filter="all">All Tasks</button>
+                <button class="view-btn" data-filter="todo">Pending</button>
+                <button class="view-btn" data-filter="done">Finished</button>
+            </div>
+            <button class="add-btn" id="openModalBtn">
+                <i data-lucide="plus"></i>
+                New Task
+            </button>
+        </div>
+
+        <div class="task-grid" id="taskGrid">
+            <!-- Tasks will be injected here -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 100px 0; color: var(--text-secondary);">
+                Initializing your workspace...
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Task Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-h">Create New Task</div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="taskTitle" placeholder="What needs to be done?" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="taskDesc" rows="3" placeholder="Add some details..."></textarea>
+                </div>
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Priority</label>
+                        <select id="taskPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Due Date</label>
+                        <input type="date" id="taskDueDate">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn btn-cancel" id="closeModalBtn">Cancel</button>
+                    <button type="submit" class="modal-btn btn-submit">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Modal -->
+    <div class="modal-overlay" id="assignModalOverlay">
+        <div class="modal">
+            <div class="modal-h">Assign Task</div>
+            <div class="form-group">
+                <label>Assignee Name</label>
+                <input type="text" id="assigneeName" placeholder="Enter name...">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn btn-cancel" id="closeAssignModalBtn">Cancel</button>
+                <button type="button" class="modal-btn btn-submit" id="confirmAssignBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Initialize lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
