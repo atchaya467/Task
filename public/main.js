@@ -3,6 +3,7 @@ const API_URL = '/tasks';
 
 // State
 let tasks = [];
+let localTasks = JSON.parse(localStorage.getItem('taskflow_backup') || '[]');
 let currentFilter = 'all';
 let currentlyAssigningId = null;
 
@@ -14,6 +15,7 @@ const overdueTasksEl = document.getElementById('overdueTasks');
 const modalOverlay = document.getElementById('modalOverlay');
 const assignModalOverlay = document.getElementById('assignModalOverlay');
 const taskForm = document.getElementById('taskForm');
+const toastContainer = document.getElementById('toastContainer');
 
 // Initialize
 async function init() {
@@ -23,7 +25,33 @@ async function init() {
         await fetchStats();
     } catch (error) {
         console.error('Initialization error:', error);
+        // Fallback to local only if server fails
+        tasks = localTasks;
+        renderTasks();
     }
+}
+
+// UI Feedback
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    let icon = 'info';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'alert-circle';
+    
+    toast.innerHTML = `
+        <i data-lucide="${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.5s forwards';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }
 
 // Fetching Logic
@@ -35,23 +63,35 @@ async function fetchTasks() {
         }
         
         const response = await fetch(url);
-        tasks = await response.json();
+        if (response.ok) {
+            const serverTasks = await response.json();
+            // Merge logic: prioritize server but include local tasks that might not have reached the Vercel instance yet
+            const serverIds = new Set(serverTasks.map(t => t.id));
+            const uniqueLocal = localTasks.filter(t => !serverIds.has(t.id));
+            tasks = [...serverTasks, ...uniqueLocal];
+        } else {
+            tasks = localTasks;
+        }
         renderTasks();
     } catch (error) {
-        console.error('Error fetching tasks:', error);
+        tasks = localTasks;
+        renderTasks();
     }
 }
 
 async function fetchStats() {
     try {
         const response = await fetch(`${API_URL}/stats`);
-        const stats = await response.json();
-        
-        totalTasksEl.textContent = stats.todo + stats.in_progress + stats.done;
-        completedTasksEl.textContent = stats.done;
-        overdueTasksEl.textContent = stats.overdue;
+        if (response.ok) {
+            const stats = await response.json();
+            
+            totalTasksEl.textContent = stats.todo + stats.in_progress + stats.done;
+            completedTasksEl.textContent = stats.done;
+            overdueTasksEl.textContent = stats.overdue;
+        }
     } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.log('Stats fetch failed, using UI count');
+        totalTasksEl.textContent = tasks.length;
     }
 }
 
@@ -119,6 +159,10 @@ async function createTask(e) {
         dueDate: document.getElementById('taskDueDate').value || null
     };
 
+    // Optimistic Update for Vercel State
+    const tempId = 'temp-' + Date.now();
+    const optimisticTask = { ...taskData, id: tempId, status: 'todo', createdAt: new Date().toISOString() };
+    
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -127,16 +171,28 @@ async function createTask(e) {
         });
 
         if (response.ok) {
+            const savedTask = await response.json();
+            
+            // Save to local persistence to survive Vercel cleanups
+            localTasks.push(savedTask);
+            localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+            
+            showToast('Task created successfully!', 'success');
             closeModal();
             taskForm.reset();
             await fetchTasks();
             await fetchStats();
         } else {
             const err = await response.json();
-            alert(`Error: ${err.error}`);
+            showToast(err.error || 'Failed to create task', 'error');
         }
     } catch (error) {
-        console.error('Error creating task:', error);
+        showToast('Connection error. Saving locally.', 'info');
+        // Save locally anyway
+        localTasks.push(optimisticTask);
+        localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+        closeModal();
+        renderTasks();
     }
 }
 
