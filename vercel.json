@@ -5,7 +5,7 @@
   ],
   "functions": {
     "task-api/src/app.js": {
-      "runtime": "vercel-node@latest"
+      "runtime": "nodejs20.x"
     }
   }
 }
