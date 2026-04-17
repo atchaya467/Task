@@ -1,11 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/task-api/src/app.js" }
-  ],
-  "functions": {
-    "task-api/src/app.js": {
-      "runtime": "nodejs20.x"
-    }
-  }
+    { "source": "/(.*)", "destination": "/api/index.js" }
+  ]
 }
