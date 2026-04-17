@@ -17,9 +17,13 @@ const taskForm = document.getElementById('taskForm');
 
 // Initialize
 async function init() {
-    await fetchTasks();
-    await fetchStats();
-    setupEventListeners();
+    setupEventListeners(); // Attach listeners immediately
+    try {
+        await fetchTasks();
+        await fetchStats();
+    } catch (error) {
+        console.error('Initialization error:', error);
+    }
 }
 
 // Fetching Logic
