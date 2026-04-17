@@ -203,11 +203,20 @@ async function completeTask(id) {
         });
 
         if (response.ok) {
+            // Update local state
+            const serverTask = await response.json();
+            localTasks = localTasks.map(t => t.id === id ? serverTask : t);
+            localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+            
+            showToast('Task marked as complete!', 'success');
             await fetchTasks();
             await fetchStats();
         }
     } catch (error) {
-        console.error('Error completing task:', error);
+        showToast('Local update only (offline)', 'info');
+        localTasks = localTasks.map(t => t.id === id ? { ...t, status: 'done' } : t);
+        localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+        renderTasks();
     }
 }
 
@@ -219,18 +228,25 @@ async function deleteTask(id) {
             method: 'DELETE'
         });
 
-        if (response.ok) {
+        if (response.status === 204 || response.ok) {
+            localTasks = localTasks.filter(t => t.id !== id);
+            localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+            
+            showToast('Task deleted', 'info');
             await fetchTasks();
             await fetchStats();
         }
     } catch (error) {
-        console.error('Error deleting task:', error);
+        showToast('Deleted locally', 'info');
+        localTasks = localTasks.filter(t => t.id !== id);
+        localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+        renderTasks();
     }
 }
 
 async function assignTask() {
     const assignee = document.getElementById('assigneeName').value;
-    if (!assignee.trim()) return alert('Please enter a name');
+    if (!assignee.trim()) return showToast('Please enter a name', 'error');
 
     try {
         const response = await fetch(`${API_URL}/${currentlyAssigningId}/assign`, {
@@ -240,14 +256,25 @@ async function assignTask() {
         });
 
         if (response.ok) {
+            const updatedTask = await response.json();
+            
+            // Update local state
+            localTasks = localTasks.map(t => t.id === currentlyAssigningId ? updatedTask : t);
+            localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+            
+            showToast(`Assigned to ${assignee}`, 'success');
             closeAssignModal();
             await fetchTasks();
         } else {
             const err = await response.json();
-            alert(`Error: ${err.error}`);
+            showToast(err.error || 'Failed to assign', 'error');
         }
     } catch (error) {
-        console.error('Error assigning task:', error);
+        showToast('Assigned locally', 'info');
+        localTasks = localTasks.map(t => t.id === currentlyAssigningId ? { ...t, assignee } : t);
+        localStorage.setItem('taskflow_backup', JSON.stringify(localTasks));
+        closeAssignModal();
+        renderTasks();
     }
 }
 
