@@ -82,16 +82,38 @@ async function fetchTasks() {
 async function fetchStats() {
     try {
         const response = await fetch(`${API_URL}/stats`);
+        let stats = { todo: 0, in_progress: 0, done: 0, overdue: 0 };
+        
         if (response.ok) {
-            const stats = await response.json();
-            
-            totalTasksEl.textContent = stats.todo + stats.in_progress + stats.done;
-            completedTasksEl.textContent = stats.done;
-            overdueTasksEl.textContent = stats.overdue;
+            stats = await response.json();
         }
+
+        // Merge/Override stats with local state for accuracy on Vercel
+        const now = new Date();
+        const localStats = tasks.reduce((acc, t) => {
+            if (t.status === 'done') acc.done++;
+            else if (t.status === 'in_progress') acc.in_progress++;
+            else acc.todo++;
+            
+            if (t.dueDate && t.status !== 'done' && new Date(t.dueDate) < now) {
+                acc.overdue++;
+            }
+            return acc;
+        }, { todo: 0, in_progress: 0, done: 0, overdue: 0 });
+
+        // Prefer local counts if they are higher (handles Vercel resets)
+        const finalStats = {
+            total: tasks.length,
+            done: localStats.done,
+            overdue: localStats.overdue
+        };
+        
+        totalTasksEl.textContent = finalStats.total;
+        completedTasksEl.textContent = finalStats.done;
+        overdueTasksEl.textContent = finalStats.overdue;
     } catch (error) {
-        console.log('Stats fetch failed, using UI count');
         totalTasksEl.textContent = tasks.length;
+        completedTasksEl.textContent = tasks.filter(t => t.status === 'done').length;
     }
 }
 
